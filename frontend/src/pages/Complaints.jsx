@@ -1,4 +1,4 @@
-
+```jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -14,16 +14,14 @@ function Complaints() {
 
   // Complaint data
   const [complaints, setComplaints] = useState([]);
-
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Room");
   const [description, setDescription] = useState("");
-
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Load complaints from MongoDB through the backend
+  // Load complaints from the backend
   useEffect(() => {
     const fetchComplaints = async () => {
       if (!studentId) {
@@ -36,7 +34,7 @@ function Complaints() {
         setError("");
 
         const response = await fetch(
-          `http://localhost:5000/api/complaints?studentId=${encodeURIComponent(studentId)}`
+          `/api/complaints?studentId=${encodeURIComponent(studentId)}`
         );
 
         if (!response.ok) {
@@ -47,7 +45,7 @@ function Complaints() {
         setComplaints(data);
       } catch (err) {
         setError(
-          "Unable to load complaints. Please check that your backend is running."
+          "Unable to load complaints. Please try again."
         );
       } finally {
         setLoading(false);
@@ -57,7 +55,7 @@ function Complaints() {
     fetchComplaints();
   }, [studentId]);
 
-  // Submit complaint to MongoDB
+  // Submit complaint
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -70,25 +68,22 @@ function Complaints() {
     setError("");
 
     const newComplaint = {
-      studentId: studentId,
+      studentId,
       studentName: user.name || "Student",
       studentEmail: user.email || "",
       title: title.trim(),
-      category: category,
+      category,
       description: description.trim()
     };
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/complaints",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(newComplaint)
-        }
-      );
+      const response = await fetch("/api/complaints", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newComplaint)
+      });
 
       const data = await response.json();
 
@@ -98,13 +93,11 @@ function Complaints() {
         );
       }
 
-      // Add the saved complaint to the page
       setComplaints((previous) => [
         ...previous,
         data
       ]);
 
-      // Clear form
       setTitle("");
       setCategory("Room");
       setDescription("");
@@ -119,7 +112,7 @@ function Complaints() {
     }
   };
 
-  // Show only this student's complaints
+  // Show this student's complaints
   const myComplaints = complaints.filter(
     (complaint) =>
       String(complaint.studentId) === studentId
@@ -127,8 +120,6 @@ function Complaints() {
 
   return (
     <div className="dashboard-page">
-
-      {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           🏠 HostelHub
@@ -136,27 +127,19 @@ function Complaints() {
 
         <div className="user-info">
           <div className="user-avatar">👤</div>
-
           <h3>{user ? user.name : "Student"}</h3>
-
           <p>{user ? user.role : "Student"}</p>
         </div>
 
         <nav className="sidebar-menu">
           <Link to="/dashboard">🏠 Dashboard</Link>
-
           <Link to="/rooms">🛏️ My Room</Link>
-
           <Link to="/complaints" className="active">
             📝 Complaints
           </Link>
-
           <Link to="/leaves">📅 Leave Requests</Link>
-
           <Link to="/mess">🍽️ Mess Menu</Link>
-
           <Link to="/notices">📢 Notices</Link>
-
           <Link to="/profile">👤 Profile</Link>
         </nav>
 
@@ -165,27 +148,18 @@ function Complaints() {
         </Link>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="dashboard-main">
-
-        {/* HEADER */}
         <header className="dashboard-header">
           <div>
             <h1>Complaints</h1>
-
-            <p>
-              Report and track your hostel complaints
-            </p>
+            <p>Report and track your hostel complaints</p>
           </div>
-
           <div className="header-user">👤</div>
         </header>
 
-        {/* COMPLAINT FORM */}
         <section className="complaint-form-card">
           <div className="section-heading">
             <h2>📝 Submit a Complaint</h2>
-
             <p>Tell us about a hostel issue</p>
           </div>
 
@@ -194,7 +168,6 @@ function Complaints() {
             onSubmit={handleSubmit}
           >
             <label>Complaint Title</label>
-
             <input
               type="text"
               placeholder="Example: Room fan not working"
@@ -204,7 +177,6 @@ function Complaints() {
             />
 
             <label>Category</label>
-
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -218,7 +190,6 @@ function Complaints() {
             </select>
 
             <label>Description</label>
-
             <textarea
               placeholder="Describe your problem..."
               value={description}
@@ -239,11 +210,9 @@ function Complaints() {
           </form>
         </section>
 
-        {/* MY COMPLAINTS */}
         <section className="dashboard-section">
           <div className="section-heading">
             <h2>📋 My Complaints</h2>
-
             <p>Track the complaints you submitted</p>
           </div>
 
@@ -260,9 +229,7 @@ function Complaints() {
           ) : myComplaints.length === 0 ? (
             <div className="empty-state">
               <div>📝</div>
-
               <h3>No complaints yet</h3>
-
               <p>
                 Your submitted complaints will appear here.
               </p>
@@ -280,7 +247,6 @@ function Complaints() {
                     <div className="complaint-top">
                       <div>
                         <h3>{complaint.title}</h3>
-
                         <span className="complaint-category">
                           {complaint.category}
                         </span>
@@ -315,3 +281,4 @@ function Complaints() {
 }
 
 export default Complaints;
+```
