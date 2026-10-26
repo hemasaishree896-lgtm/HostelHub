@@ -1,7 +1,8 @@
-
+```javascript
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
@@ -15,13 +16,6 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/complaints", require("./routes/complaints"));
 app.use("/api/leaves", require("./routes/leaves"));
 
-// Home route
-app.get("/", (req, res) => {
-  res.json({
-    message: "HostelHub backend is running!"
-  });
-});
-
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({
@@ -33,11 +27,28 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Handle unknown API routes
-app.use((req, res) => {
-  res.status(404).json({
-    message: "Route not found"
-  });
+// Frontend build folder
+const frontendPath = path.join(__dirname, "../frontend/dist");
+
+// Serve React frontend files
+app.use(express.static(frontendPath));
+
+// Handle React frontend routes
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({
+      message: "Route not found"
+    });
+  }
+
+  res.sendFile(
+    path.join(frontendPath, "index.html"),
+    (err) => {
+      if (err) {
+        next(err);
+      }
+    }
+  );
 });
 
 // Error handler
@@ -53,7 +64,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 if (!process.env.MONGO_URI) {
-  console.error("MONGO_URI is missing from your .env file");
+  console.error("MONGO_URI is missing from environment variables");
   process.exit(1);
 }
 
@@ -63,7 +74,7 @@ mongoose
     console.log("MongoDB connected successfully");
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`HostelHub backend running on port ${PORT}`);
+      console.log(`HostelHub server running on port ${PORT}`);
     });
   })
   .catch((error) => {
@@ -74,3 +85,4 @@ mongoose
 
     process.exit(1);
   });
+```
