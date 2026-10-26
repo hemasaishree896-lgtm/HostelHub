@@ -107,5 +107,5 @@ function Login() {
   );
 }
 
-export default Login;
+export { Login as default };
 ```
