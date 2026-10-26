@@ -1,4 +1,4 @@
-
+```jsx
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -20,7 +20,7 @@ function Leaves() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Load leave requests from MongoDB
+  // Load leave requests
   useEffect(() => {
     const fetchLeaves = async () => {
       if (!studentId) {
@@ -33,7 +33,7 @@ function Leaves() {
         setError("");
 
         const response = await fetch(
-          `http://localhost:5000/api/leaves?studentId=${encodeURIComponent(studentId)}`
+          `/api/leaves?studentId=${encodeURIComponent(studentId)}`
         );
 
         if (!response.ok) {
@@ -44,7 +44,7 @@ function Leaves() {
         setLeaves(data);
       } catch (err) {
         setError(
-          "Unable to load leave requests. Please check your backend."
+          "Unable to load leave requests. Please try again."
         );
       } finally {
         setLoading(false);
@@ -54,7 +54,7 @@ function Leaves() {
     fetchLeaves();
   }, [studentId]);
 
-  // Submit leave request to MongoDB
+  // Submit leave request
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -81,16 +81,13 @@ function Leaves() {
     };
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/leaves",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(newLeave)
-        }
-      );
+      const response = await fetch("/api/leaves", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newLeave)
+      });
 
       const data = await response.json();
 
@@ -116,15 +113,13 @@ function Leaves() {
     }
   };
 
-  // Show only the current student's leave requests
+  // Show this student's leave requests
   const myLeaves = leaves.filter(
     (leave) => String(leave.studentId) === studentId
   );
 
   return (
     <div className="dashboard-page">
-
-      {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           🏠 HostelHub
@@ -132,40 +127,20 @@ function Leaves() {
 
         <div className="user-info">
           <div className="user-avatar">👤</div>
-
           <h3>{user ? user.name : "Student"}</h3>
-
           <p>{user ? user.role : "Student"}</p>
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/dashboard">
-            🏠 Dashboard
-          </Link>
-
-          <Link to="/rooms">
-            🛏️ My Room
-          </Link>
-
-          <Link to="/complaints">
-            📝 Complaints
-          </Link>
-
+          <Link to="/dashboard">🏠 Dashboard</Link>
+          <Link to="/rooms">🛏️ My Room</Link>
+          <Link to="/complaints">📝 Complaints</Link>
           <Link to="/leaves" className="active">
             📅 Leave Requests
           </Link>
-
-          <Link to="/mess">
-            🍽️ Mess Menu
-          </Link>
-
-          <Link to="/notices">
-            📢 Notices
-          </Link>
-
-          <Link to="/profile">
-            👤 Profile
-          </Link>
+          <Link to="/mess">🍽️ Mess Menu</Link>
+          <Link to="/notices">📢 Notices</Link>
+          <Link to="/profile">👤 Profile</Link>
         </nav>
 
         <Link to="/dashboard" className="back-dashboard">
@@ -173,30 +148,20 @@ function Leaves() {
         </Link>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="dashboard-main">
-
-        {/* HEADER */}
         <header className="dashboard-header">
           <div>
             <h1>Leave Requests</h1>
-
-            <p>
-              Apply for leave and track your requests
-            </p>
+            <p>Apply for leave and track your requests</p>
           </div>
 
           <div className="header-user">👤</div>
         </header>
 
-        {/* LEAVE FORM */}
         <section className="leave-form-card">
           <div className="section-heading">
             <h2>📅 Apply for Leave</h2>
-
-            <p>
-              Submit your leave request to the warden
-            </p>
+            <p>Submit your leave request to the warden</p>
           </div>
 
           <form
@@ -206,7 +171,6 @@ function Leaves() {
             <div className="date-grid">
               <div>
                 <label>From Date</label>
-
                 <input
                   type="date"
                   value={fromDate}
@@ -218,7 +182,6 @@ function Leaves() {
 
               <div>
                 <label>To Date</label>
-
                 <input
                   type="date"
                   value={toDate}
@@ -230,7 +193,6 @@ function Leaves() {
             </div>
 
             <label>Reason for Leave</label>
-
             <textarea
               placeholder="Example: Going home for a family function"
               value={reason}
@@ -251,14 +213,10 @@ function Leaves() {
           </form>
         </section>
 
-        {/* MY LEAVE REQUESTS */}
         <section className="dashboard-section">
           <div className="section-heading">
             <h2>📋 My Leave Requests</h2>
-
-            <p>
-              Track the leave requests you submitted
-            </p>
+            <p>Track the leave requests you submitted</p>
           </div>
 
           {error && (
@@ -274,9 +232,7 @@ function Leaves() {
           ) : myLeaves.length === 0 ? (
             <div className="empty-state">
               <div>📅</div>
-
               <h3>No leave requests yet</h3>
-
               <p>
                 Your submitted leave requests will appear here.
               </p>
@@ -294,12 +250,10 @@ function Leaves() {
                     <div className="leave-top">
                       <div>
                         <h3>Leave Request</h3>
-
                         <p>
                           <strong>From:</strong>{" "}
                           {leave.fromDate}
                         </p>
-
                         <p>
                           <strong>To:</strong>{" "}
                           {leave.toDate}
@@ -313,7 +267,6 @@ function Leaves() {
 
                     <div className="leave-reason">
                       <strong>Reason:</strong>
-
                       <p>{leave.reason}</p>
                     </div>
 
@@ -337,3 +290,4 @@ function Leaves() {
 }
 
 export default Leaves;
+```
