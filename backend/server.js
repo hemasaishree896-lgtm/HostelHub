@@ -1,9 +1,12 @@
-```javascript
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("path");
-require("dotenv").config();
+
+require("dotenv").config({
+  path: path.join(__dirname, ".env"),
+});
 
 const app = express();
 
@@ -11,7 +14,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// API Routes
+// API routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/complaints", require("./routes/complaints"));
 app.use("/api/leaves", require("./routes/leaves"));
@@ -23,66 +26,62 @@ app.get("/api/health", (req, res) => {
     database:
       mongoose.connection.readyState === 1
         ? "connected"
-        : "disconnected"
+        : "disconnected",
   });
 });
 
-// Frontend build folder
+// Serve the React frontend
 const frontendPath = path.join(__dirname, "../frontend/dist");
 
-// Serve React frontend files
 app.use(express.static(frontendPath));
 
-// Handle React frontend routes
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({
-      message: "Route not found"
-    });
-  }
+// Handle unknown API routes
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    message: "API route not found",
+  });
+});
 
-  res.sendFile(
-    path.join(frontendPath, "index.html"),
-    (err) => {
-      if (err) {
-        next(err);
-      }
+// Handle frontend routes
+app.use((req, res, next) => {
+  res.sendFile(path.join(frontendPath, "index.html"), (error) => {
+    if (error) {
+      next(error);
     }
-  );
+  });
 });
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error("Server error:", err.message);
+app.use((error, req, res, next) => {
+  console.error("Server error:", error.message);
 
   res.status(500).json({
-    message: "Internal server error"
+    message: "Internal server error",
   });
 });
 
-// Connect to MongoDB and start server
+// Start server and connect to MongoDB
 const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
 
-if (!process.env.MONGO_URI) {
-  console.error("MONGO_URI is missing from environment variables");
-  process.exit(1);
-}
+async function startServer() {
+  try {
+    if (!MONGO_URI) {
+      throw new Error(
+        "MONGO_URI is missing from environment variables."
+      );
+    }
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully");
+    await mongoose.connect(MONGO_URI);
+    console.log("MongoDB connected successfully.");
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`HostelHub server running on port ${PORT}`);
     });
-  })
-  .catch((error) => {
-    console.error(
-      "MongoDB connection failed:",
-      error.message
-    );
-
+  } catch (error) {
+    console.error("Server startup failed:", error.message);
     process.exit(1);
-  });
-```
+  }
+}
+
+startServer();
