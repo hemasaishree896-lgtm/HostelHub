@@ -1,287 +1,199 @@
-```jsx
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+
+import { useEffect, useState } from "react";
 
 function Leaves() {
-  const user = JSON.parse(
-    localStorage.getItem("hostelUser") || "null"
-  );
-
-  const studentId = user
-    ? String(user.id ?? user._id ?? "")
-    : "";
-
   const [leaves, setLeaves] = useState([]);
+  const [leaveType, setLeaveType] = useState("Home");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [reason, setReason] = useState("");
-
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
-  // Load leave requests
+  const user = JSON.parse(localStorage.getItem("hostelUser") || "{}");
+  const studentId = user._id || user.id || user.studentId || "";
+  const studentName = user.name || user.username || "";
+
   useEffect(() => {
-    const fetchLeaves = async () => {
-      if (!studentId) {
-        setError("Please log in to view your leave requests.");
-        setLoading(false);
-        return;
+    loadLeaves();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadLeaves() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        "/api/leaves?studentId=" + encodeURIComponent(studentId)
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Could not load leave requests.");
       }
 
-      try {
-        setError("");
+      setLeaves(Array.isArray(data) ? data : data.leaves || []);
+    } catch (err) {
+      setError(err.message || "Could not connect to the server.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-        const response = await fetch(
-          `/api/leaves?studentId=${encodeURIComponent(studentId)}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Could not load leave requests.");
-        }
-
-        const data = await response.json();
-        setLeaves(data);
-      } catch (err) {
-        setError(
-          "Unable to load leave requests. Please try again."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaves();
-  }, [studentId]);
-
-  // Submit leave request
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
 
     if (!studentId) {
-      alert("Please log in before applying for leave.");
+      setError("Please log in again before applying for leave.");
       return;
     }
 
-    if (fromDate > toDate) {
-      setError("The end date cannot be before the start date.");
+    if (!fromDate || !toDate || !reason.trim()) {
+      setError("Please complete all the fields.");
+      return;
+    }
+
+    if (toDate < fromDate) {
+      setError("The return date cannot be before the starting date.");
       return;
     }
 
     setSubmitting(true);
-    setError("");
-
-    const newLeave = {
-      studentId,
-      studentName: user.name || "Student",
-      studentEmail: user.email || "",
-      fromDate,
-      toDate,
-      reason: reason.trim()
-    };
 
     try {
       const response = await fetch("/api/leaves", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(newLeave)
+        body: JSON.stringify({
+          leaveType,
+          fromDate,
+          toDate,
+          reason: reason.trim(),
+          studentId,
+          studentName,
+          status: "Pending",
+          date: new Date().toISOString(),
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to submit leave request."
-        );
+        throw new Error(data.message || "Could not submit the leave request.");
       }
 
-      setLeaves((previous) => [...previous, data]);
-
+      setLeaveType("Home");
       setFromDate("");
       setToDate("");
       setReason("");
+      setMessage("Leave request submitted successfully!");
 
-      alert("Leave request submitted successfully!");
+      await loadLeaves();
     } catch (err) {
-      setError(
-        err.message || "Unable to submit leave request."
-      );
+      setError(err.message || "Could not connect to the server.");
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // Show this student's leave requests
-  const myLeaves = leaves.filter(
-    (leave) => String(leave.studentId) === studentId
-  );
+  }
 
   return (
-    <div className="dashboard-page">
-      <aside className="sidebar">
-        <div className="sidebar-logo">
-          🏠 HostelHub
-        </div>
-
-        <div className="user-info">
-          <div className="user-avatar">👤</div>
-          <h3>{user ? user.name : "Student"}</h3>
-          <p>{user ? user.role : "Student"}</p>
-        </div>
-
-        <nav className="sidebar-menu">
-          <Link to="/dashboard">🏠 Dashboard</Link>
-          <Link to="/rooms">🛏️ My Room</Link>
-          <Link to="/complaints">📝 Complaints</Link>
-          <Link to="/leaves" className="active">
-            📅 Leave Requests
-          </Link>
-          <Link to="/mess">🍽️ Mess Menu</Link>
-          <Link to="/notices">📢 Notices</Link>
-          <Link to="/profile">👤 Profile</Link>
-        </nav>
-
-        <Link to="/dashboard" className="back-dashboard">
-          ← Dashboard
-        </Link>
-      </aside>
-
-      <main className="dashboard-main">
-        <header className="dashboard-header">
-          <div>
-            <h1>Leave Requests</h1>
-            <p>Apply for leave and track your requests</p>
-          </div>
-
-          <div className="header-user">👤</div>
+    <div className="dashboard-container">
+      <main className="main-content">
+        <header className="page-header">
+          <h1>Leave Applications</h1>
+          <p>Apply for leave and check your application status.</p>
         </header>
 
-        <section className="leave-form-card">
-          <div className="section-heading">
-            <h2>📅 Apply for Leave</h2>
-            <p>Submit your leave request to the warden</p>
-          </div>
+        <section className="form-card">
+          <h2>Apply for Leave</h2>
 
-          <form
-            className="leave-form"
-            onSubmit={handleSubmit}
-          >
-            <div className="date-grid">
-              <div>
-                <label>From Date</label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  min={new Date().toLocaleDateString("en-CA")}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  required
-                />
-              </div>
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="leave-type">Leave Type</label>
+            <select
+              id="leave-type"
+              value={leaveType}
+              onChange={(event) => setLeaveType(event.target.value)}
+            >
+              <option value="Home">Going Home</option>
+              <option value="Personal">Personal</option>
+              <option value="Medical">Medical</option>
+              <option value="Other">Other</option>
+            </select>
 
-              <div>
-                <label>To Date</label>
-                <input
-                  type="date"
-                  value={toDate}
-                  min={fromDate || new Date().toLocaleDateString("en-CA")}
-                  onChange={(e) => setToDate(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <label>Reason for Leave</label>
-            <textarea
-              placeholder="Example: Going home for a family function"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows="5"
+            <label htmlFor="from-date">Starting Date</label>
+            <input
+              id="from-date"
+              type="date"
+              value={fromDate}
+              onChange={(event) => setFromDate(event.target.value)}
               required
             />
 
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={submitting}
-            >
-              {submitting
-                ? "Submitting..."
-                : "Submit Leave Request"}
+            <label htmlFor="to-date">Return Date</label>
+            <input
+              id="to-date"
+              type="date"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={(event) => setToDate(event.target.value)}
+              required
+            />
+
+            <label htmlFor="leave-reason">Reason for Leave</label>
+            <textarea
+              id="leave-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Enter your reason"
+              rows="4"
+              required
+            />
+
+            <button type="submit" disabled={submitting}>
+              {submitting ? "Submitting..." : "Apply for Leave"}
             </button>
           </form>
+
+          {message && <p className="success-message">{message}</p>}
+          {error && <p className="error-message">{error}</p>}
         </section>
 
-        <section className="dashboard-section">
-          <div className="section-heading">
-            <h2>📋 My Leave Requests</h2>
-            <p>Track the leave requests you submitted</p>
-          </div>
-
-          {error && (
-            <p role="alert" style={{ color: "red" }}>
-              {error}
-            </p>
-          )}
+        <section className="leaves-list">
+          <h2>My Leave Applications</h2>
 
           {loading ? (
-            <div className="empty-state">
-              <p>Loading leave requests...</p>
-            </div>
-          ) : myLeaves.length === 0 ? (
-            <div className="empty-state">
-              <div>📅</div>
-              <h3>No leave requests yet</h3>
-              <p>
-                Your submitted leave requests will appear here.
-              </p>
-            </div>
+            <p>Loading leave applications...</p>
+          ) : leaves.length === 0 ? (
+            <p>No leave applications submitted yet.</p>
           ) : (
-            <div className="leave-list">
-              {myLeaves
-                .slice()
-                .reverse()
-                .map((leave) => (
-                  <div
-                    className="leave-card"
-                    key={leave._id || leave.id}
-                  >
-                    <div className="leave-top">
-                      <div>
-                        <h3>Leave Request</h3>
-                        <p>
-                          <strong>From:</strong>{" "}
-                          {leave.fromDate}
-                        </p>
-                        <p>
-                          <strong>To:</strong>{" "}
-                          {leave.toDate}
-                        </p>
-                      </div>
-
-                      <span className="leave-status">
-                        {leave.status}
-                      </span>
-                    </div>
-
-                    <div className="leave-reason">
-                      <strong>Reason:</strong>
-                      <p>{leave.reason}</p>
-                    </div>
-
-                    <p className="leave-date">
-                      Applied on{" "}
-                      {leave.date ||
-                        (leave.createdAt
-                          ? new Date(
-                              leave.createdAt
-                            ).toLocaleDateString()
-                          : "Date unavailable")}
-                    </p>
-                  </div>
-                ))}
-            </div>
+            leaves.map((leave) => (
+              <article
+                className="leave-card"
+                key={leave._id || leave.id}
+              >
+                <h3>{leave.leaveType || "Leave Application"}</h3>
+                <p>
+                  <strong>Starting Date:</strong> {leave.fromDate || "—"}
+                </p>
+                <p>
+                  <strong>Return Date:</strong> {leave.toDate || "—"}
+                </p>
+                <p>
+                  <strong>Reason:</strong> {leave.reason || "—"}
+                </p>
+                <p>
+                  <strong>Status:</strong> {leave.status || "Pending"}
+                </p>
+              </article>
+            ))
           )}
         </section>
       </main>
@@ -290,4 +202,3 @@ function Leaves() {
 }
 
 export default Leaves;
-```
