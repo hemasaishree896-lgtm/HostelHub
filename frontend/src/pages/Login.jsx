@@ -1,4 +1,4 @@
-```jsx
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,10 +6,9 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  async function handleLogin(e) {
     e.preventDefault();
     setLoading(true);
 
@@ -19,10 +18,7 @@ function Login() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -32,45 +28,33 @@ function Login() {
         return;
       }
 
-      // Save the logged-in user
-      localStorage.setItem(
-        "hostelUser",
-        JSON.stringify(data.user)
-      );
-
-      // Save the authentication token
+      localStorage.setItem("hostelUser", JSON.stringify(data.user));
       localStorage.setItem("hostelToken", data.token);
       localStorage.setItem("isLoggedIn", "true");
 
       alert("Login successful!");
 
-      // Navigate based on the user's role
       if (data.user.role === "warden") {
         navigate("/warden-dashboard");
       } else {
         navigate("/dashboard");
       }
     } catch (error) {
-      alert(
-        "Cannot connect to the server. Please try again."
-      );
+      alert("Cannot connect to the server. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="auth-page">
       <div className="auth-box">
         <h1>🏠 HostelHub</h1>
-
         <h2>Welcome Back</h2>
-
         <p>Login to your hostel account</p>
 
         <form onSubmit={handleLogin}>
           <label>Email</label>
-
           <input
             type="email"
             placeholder="Enter your email"
@@ -80,7 +64,6 @@ function Login() {
           />
 
           <label>Password</label>
-
           <input
             type="password"
             placeholder="Enter your password"
@@ -107,5 +90,4 @@ function Login() {
   );
 }
 
-export { Login as default };
-```
+export default Login;
