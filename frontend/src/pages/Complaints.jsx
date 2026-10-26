@@ -1,184 +1,318 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 function Complaints() {
+  // Get logged-in user
+  const user = JSON.parse(
+    localStorage.getItem("hostelUser") || "null"
+  );
+
+  const studentId = user
+    ? String(user.id ?? user._id ?? "")
+    : "";
+
+  // Deployed backend URL
+  const API_URL = "https://hostelhub6.onrender.com";
+
+  // Complaint data
   const [complaints, setComplaints] = useState([]);
+
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Room");
   const [description, setDescription] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("hostelUser") || "{}");
-  const studentId = user._id || user.id || user.studentId || "";
-  const studentName = user.name || user.username || "";
-
+  // Load complaints from MongoDB through the deployed backend
   useEffect(() => {
-    loadComplaints();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const fetchComplaints = async () => {
+      if (!studentId) {
+        setError("Please log in to view your complaints.");
+        setLoading(false);
+        return;
+      }
 
-  async function loadComplaints() {
-    setLoading(true);
+      try {
+        setError("");
+
+        const response = await fetch(
+          `${API_URL}/api/complaints?studentId=${encodeURIComponent(studentId)}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load complaints.");
+        }
+
+        const data = await response.json();
+
+        setComplaints(
+          Array.isArray(data) ? data : []
+        );
+      } catch (err) {
+        setError(
+          "Unable to load complaints. Please check your backend connection."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComplaints();
+  }, [studentId]);
+
+  // Submit complaint to MongoDB
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!studentId) {
+      alert("Please log in before submitting a complaint.");
+      return;
+    }
+
+    setSubmitting(true);
     setError("");
+
+    const newComplaint = {
+      studentId: studentId,
+      studentName: user.name || "Student",
+      studentEmail: user.email || "",
+      title: title.trim(),
+      category: category,
+      description: description.trim()
+    };
 
     try {
       const response = await fetch(
-        "/api/complaints?studentId=" + encodeURIComponent(studentId)
+        `${API_URL}/api/complaints`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(newComplaint)
+        }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Could not load complaints.");
+        throw new Error(
+          data.message || "Failed to submit complaint."
+        );
       }
 
-      setComplaints(Array.isArray(data) ? data : data.complaints || []);
-    } catch (err) {
-      setError(err.message || "Could not connect to the server.");
-    } finally {
-      setLoading(false);
-    }
-  }
+      // Add the saved complaint to the page
+      setComplaints((previous) => [
+        ...previous,
+        data
+      ]);
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!studentId) {
-      setError("Please log in again before submitting a complaint.");
-      return;
-    }
-
-    if (!title.trim() || !description.trim()) {
-      setError("Please enter a title and description.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const response = await fetch("/api/complaints", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          category,
-          description: description.trim(),
-          studentId,
-          studentName,
-          status: "Pending",
-          date: new Date().toISOString(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Could not submit the complaint.");
-      }
-
+      // Clear form
       setTitle("");
       setCategory("Room");
       setDescription("");
-      setMessage("Complaint submitted successfully!");
 
-      await loadComplaints();
+      alert("Complaint submitted successfully!");
     } catch (err) {
-      setError(err.message || "Could not connect to the server.");
+      setError(
+        err.message || "Unable to submit complaint."
+      );
     } finally {
       setSubmitting(false);
     }
-  }
+  };
+
+  // Show only this student's complaints
+  const myComplaints = complaints.filter(
+    (complaint) =>
+      String(complaint.studentId) === studentId
+  );
 
   return (
-    <div className="dashboard-container">
-      <main className="main-content">
-        <header className="page-header">
-          <h1>Complaints</h1>
-          <p>Submit and track your hostel complaints.</p>
+    <div className="dashboard-page">
+
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          🏠 HostelHub
+        </div>
+
+        <div className="user-info">
+          <div className="user-avatar">👤</div>
+
+          <h3>{user ? user.name : "Student"}</h3>
+
+          <p>{user ? user.role : "Student"}</p>
+        </div>
+
+        <nav className="sidebar-menu">
+          <Link to="/dashboard">🏠 Dashboard</Link>
+
+          <Link to="/rooms">🛏️ My Room</Link>
+
+          <Link to="/complaints" className="active">
+            📝 Complaints
+          </Link>
+
+          <Link to="/leaves">📅 Leave Requests</Link>
+
+          <Link to="/mess">🍽️ Mess Menu</Link>
+
+          <Link to="/notices">📢 Notices</Link>
+
+          <Link to="/profile">👤 Profile</Link>
+        </nav>
+
+        <Link to="/dashboard" className="back-dashboard">
+          ← Dashboard
+        </Link>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="dashboard-main">
+
+        {/* HEADER */}
+        <header className="dashboard-header">
+          <div>
+            <h1>Complaints</h1>
+
+            <p>
+              Report and track your hostel complaints
+            </p>
+          </div>
+
+          <div className="header-user">👤</div>
         </header>
 
-        <section className="form-card">
-          <h2>Submit a Complaint</h2>
+        {/* COMPLAINT FORM */}
+        <section className="complaint-form-card">
+          <div className="section-heading">
+            <h2>📝 Submit a Complaint</h2>
 
-          <form onSubmit={handleSubmit}>
-            <label htmlFor="complaint-title">Complaint Title</label>
+            <p>Tell us about a hostel issue</p>
+          </div>
+
+          <form
+            className="complaint-form"
+            onSubmit={handleSubmit}
+          >
+            <label>Complaint Title</label>
+
             <input
-              id="complaint-title"
               type="text"
+              placeholder="Example: Room fan not working"
               value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Enter complaint title"
+              onChange={(e) => setTitle(e.target.value)}
               required
             />
 
-            <label htmlFor="complaint-category">Category</label>
+            <label>Category</label>
+
             <select
-              id="complaint-category"
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(e) => setCategory(e.target.value)}
             >
               <option value="Room">Room</option>
               <option value="Food">Food</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Cleanliness">Cleanliness</option>
+              <option value="Electricity">Electricity</option>
+              <option value="Water">Water</option>
+              <option value="Cleaning">Cleaning</option>
               <option value="Other">Other</option>
             </select>
 
-            <label htmlFor="complaint-description">Description</label>
+            <label>Description</label>
+
             <textarea
-              id="complaint-description"
+              placeholder="Describe your problem..."
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Explain your complaint"
-              rows="4"
+              onChange={(e) => setDescription(e.target.value)}
+              rows="5"
               required
             />
 
-            <button type="submit" disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Complaint"}
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={submitting}
+            >
+              {submitting
+                ? "Submitting..."
+                : "Submit Complaint"}
             </button>
           </form>
-
-          {message && <p className="success-message">{message}</p>}
-          {error && <p className="error-message">{error}</p>}
         </section>
 
-        <section className="complaints-list">
-          <h2>My Complaints</h2>
+        {/* MY COMPLAINTS */}
+        <section className="dashboard-section">
+          <div className="section-heading">
+            <h2>📋 My Complaints</h2>
+
+            <p>Track the complaints you submitted</p>
+          </div>
+
+          {error && (
+            <p role="alert" style={{ color: "red" }}>
+              {error}
+            </p>
+          )}
 
           {loading ? (
-            <p>Loading complaints...</p>
-          ) : complaints.length === 0 ? (
-            <p>No complaints submitted yet.</p>
+            <div className="empty-state">
+              <p>Loading complaints...</p>
+            </div>
+          ) : myComplaints.length === 0 ? (
+            <div className="empty-state">
+              <div>📝</div>
+
+              <h3>No complaints yet</h3>
+
+              <p>
+                Your submitted complaints will appear here.
+              </p>
+            </div>
           ) : (
-            complaints.map((complaint) => (
-              <article
-                className="complaint-card"
-                key={complaint._id || complaint.id}
-              >
-                <h3>{complaint.title || "Complaint"}</h3>
-                <p>
-                  <strong>Category:</strong> {complaint.category || "Other"}
-                </p>
-                <p>{complaint.description}</p>
-                <p>
-                  <strong>Status:</strong> {complaint.status || "Pending"}
-                </p>
-                <p>
-                  <strong>Date:</strong>{" "}
-                  {complaint.date
-                    ? new Date(complaint.date).toLocaleDateString()
-                    : "Not available"}
-                </p>
-              </article>
-            ))
+            <div className="complaint-list">
+              {myComplaints
+                .slice()
+                .reverse()
+                .map((complaint) => (
+                  <div
+                    className="complaint-card"
+                    key={complaint._id || complaint.id}
+                  >
+                    <div className="complaint-top">
+                      <div>
+                        <h3>{complaint.title}</h3>
+
+                        <span className="complaint-category">
+                          {complaint.category}
+                        </span>
+                      </div>
+
+                      <span className="complaint-status">
+                        {complaint.status}
+                      </span>
+                    </div>
+
+                    <p className="complaint-description">
+                      {complaint.description}
+                    </p>
+
+                    <p className="complaint-date">
+                      Submitted on{" "}
+                      {complaint.date ||
+                        (complaint.createdAt
+                          ? new Date(
+                              complaint.createdAt
+                            ).toLocaleDateString()
+                          : "Date unavailable")}
+                    </p>
+                  </div>
+                ))}
+            </div>
           )}
         </section>
       </main>
