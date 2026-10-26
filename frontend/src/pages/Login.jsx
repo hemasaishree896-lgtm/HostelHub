@@ -1,4 +1,4 @@
-
+```jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -14,19 +14,16 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
       const data = await response.json();
 
@@ -43,7 +40,6 @@ function Login() {
 
       // Save the authentication token
       localStorage.setItem("hostelToken", data.token);
-
       localStorage.setItem("isLoggedIn", "true");
 
       alert("Login successful!");
@@ -56,7 +52,7 @@ function Login() {
       }
     } catch (error) {
       alert(
-        "Cannot connect to the server. Please make sure the backend is running."
+        "Cannot connect to the server. Please try again."
       );
     } finally {
       setLoading(false);
@@ -112,3 +108,4 @@ function Login() {
 }
 
 export default Login;
+```
