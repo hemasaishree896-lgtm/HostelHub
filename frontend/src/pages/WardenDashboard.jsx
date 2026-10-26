@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hostelhub6.onrender.com/api";
 
 function WardenDashboard() {
   const navigate = useNavigate();
@@ -100,7 +100,7 @@ function WardenDashboard() {
 
         if (!cancelled) {
           setRequestError(
-            "Unable to load requests. Check that the backend is running."
+            "Unable to load requests. Check your deployed backend and API routes."
           );
         }
       } finally {
@@ -155,7 +155,6 @@ function WardenDashboard() {
         );
       }
 
-      // Update the student table and count immediately
       setUsers((previous) =>
         previous.filter((user) => user._id !== student._id)
       );
