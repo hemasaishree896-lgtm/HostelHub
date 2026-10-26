@@ -1,4 +1,4 @@
-
+```jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -14,25 +14,21 @@ function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-            room: role === "student" ? room : "A-101",
-          }),
-        }
-      );
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          room: role === "student" ? room : "A-101",
+        }),
+      });
 
       const data = await response.json();
 
@@ -45,7 +41,7 @@ function Register() {
       navigate("/login");
     } catch (error) {
       alert(
-        "Cannot connect to the server. Please make sure the backend is running."
+        "Cannot connect to the server. Please try again."
       );
     } finally {
       setLoading(false);
@@ -141,3 +137,4 @@ function Register() {
 }
 
 export default Register;
+```
