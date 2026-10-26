@@ -2,24 +2,33 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+const API_URL = "https://hostelhub6.onrender.com";
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  async function handleLogin(e) {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        `${API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -28,33 +37,46 @@ function Login() {
         return;
       }
 
-      localStorage.setItem("hostelUser", JSON.stringify(data.user));
+      // Save the logged-in user
+      localStorage.setItem(
+        "hostelUser",
+        JSON.stringify(data.user)
+      );
+
+      // Save the authentication token
       localStorage.setItem("hostelToken", data.token);
+
       localStorage.setItem("isLoggedIn", "true");
 
       alert("Login successful!");
 
+      // Navigate based on the user's role
       if (data.user.role === "warden") {
         navigate("/warden-dashboard");
       } else {
         navigate("/dashboard");
       }
     } catch (error) {
-      alert("Cannot connect to the server. Please try again.");
+      alert(
+        "Cannot connect to the server. Please check your internet connection or try again later."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="auth-page">
       <div className="auth-box">
         <h1>🏠 HostelHub</h1>
+
         <h2>Welcome Back</h2>
+
         <p>Login to your hostel account</p>
 
         <form onSubmit={handleLogin}>
           <label>Email</label>
+
           <input
             type="email"
             placeholder="Enter your email"
@@ -64,6 +86,7 @@ function Login() {
           />
 
           <label>Password</label>
+
           <input
             type="password"
             placeholder="Enter your password"
